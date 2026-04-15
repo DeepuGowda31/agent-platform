@@ -1,5 +1,4 @@
 import hashlib
-from functools import lru_cache
 from app.agents.orchestrator import run_agent
 from app.observability.metrics import METRICS
 
