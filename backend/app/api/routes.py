@@ -1,13 +1,16 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, field_validator
 from typing import Optional
 from app.services.agent_service import AgentService
 from app.memory.store import get_history, clear_session
 from app.core.logger import logger
 from app.observability.metrics import METRICS
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 router = APIRouter()
 service = AgentService()
+limiter = Limiter(key_func=get_remote_address)
 
 class QueryRequest(BaseModel):
     query: str
@@ -23,7 +26,8 @@ class QueryRequest(BaseModel):
         return v.strip()
 
 @router.post("/agent/query")
-async def agent_query(req: QueryRequest):
+@limiter.limit("20/minute")
+async def agent_query(request: Request, req: QueryRequest):
     logger.info({"event": "API_REQUEST", "session_id": req.session_id})
     try:
         return await service.handle_query(req.query, req.session_id)

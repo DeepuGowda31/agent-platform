@@ -78,7 +78,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           cd backend
-          pytest tests/ -v --cov=app --cov-report=xml --cov-report=term-missing
+          pytest tests/ -v --cov=app --cov-report=xml --cov-report=term-missing --cov-fail-under=50
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
