@@ -8,6 +8,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
 
   # ── Stage 1: Lint ──────────────────────────────────────────────────────────
@@ -57,3 +58,65 @@ jobs:
           PINECONE_INDEX: agent-platform
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           SQLITE_PATH: ./data/agent.db
+
+  # ── Stage 3: Deploy to Staging (dev branch) ───────────────────────────────
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/dev'
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Railway (Staging)
+        run: |
+          npm install -g @railway/cli
+          railway up --service agent-platform-staging --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
+
+      - name: Verify staging deployment
+        run: |
+          sleep 15
+          curl --fail ${{ vars.STAGING_URL }}/health || exit 1
+
+  # ── Stage 4: Deploy to Production (main branch) ───────────────────────────
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Railway (Production)
+        run: |
+          npm install -g @railway/cli
+          railway up --service agent-platform --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PROD }}
+
+      - name: Verify production deployment
+        run: |
+          sleep 15
+          curl --fail ${{ vars.PRODUCTION_URL }}/health || exit 1
+
+      - name: Notify success
+        if: success()
+        run: |
+          echo "✅ Production deployment successful!"
+          echo "URL: ${{ vars.PRODUCTION_URL }}"
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed — triggering rollback"
+          railway rollback --service agent-platform
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PROD }}
