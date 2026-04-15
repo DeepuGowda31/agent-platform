@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 from httpx import AsyncClient, ASGITransport
 
 
-# ── Mock Groq client before app loads ───────────────────────────────────────
+# ── Mock Groq client before the app loads ───────────────────────────────────────
 mock_groq = MagicMock()
 mock_groq.chat.completions.create.return_value = MagicMock(
     choices=[MagicMock(message=MagicMock(content="general"))]
