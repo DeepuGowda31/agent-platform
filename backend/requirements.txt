@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+pydantic
+python-dotenv
+pyyaml
+groq
+langgraph
+pinecone
+tavily-python
+httpx
+aiosqlite
+prometheus-fastapi-instrumentator
+prometheus-client
+pytest
+pytest-asyncio

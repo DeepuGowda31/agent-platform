@@ -1,0 +1,8 @@
+agent:
+  name: knowledge_agent
+  max_iterations: 3
+  llm_model: llama-3.3-70b-versatile
+
+tools:
+  - document_search
+  - summarizer
