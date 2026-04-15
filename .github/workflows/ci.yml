@@ -10,6 +10,11 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   PYTHON_VERSION: "3.11"
 
+# Cancel in-progress runs on the same branch when a new push comes in
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
 
   # ── Stage 1: Lint ──────────────────────────────────────────────────────────
@@ -45,7 +50,7 @@ jobs:
         run: pip install pip-audit
 
       - name: Scan dependencies for CVEs
-        run: pip-audit -r backend/requirements.txt --ignore-vuln PYSEC-2022-42969 || true
+        run: pip-audit -r backend/requirements.txt --ignore-vuln PYSEC-2022-42969
 
   # ── Stage 3: Test ──────────────────────────────────────────────────────────
   test:
@@ -70,7 +75,6 @@ jobs:
         run: |
           cd backend
           pip install -r requirements.txt
-          pip install pytest-cov
 
       - name: Create data directory
         run: mkdir -p backend/data
@@ -86,18 +90,23 @@ jobs:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           SQLITE_PATH: ./data/agent.db
 
-      - name: Upload test results
+      - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: coverage-report
           path: backend/coverage.xml
           retention-days: 7
 
-      - name: Notify on test failure
-        if: failure()
+      - name: Write job summary
+        if: always()
         run: |
-          echo "::error::Tests failed. Check the test results artifact for details."
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Triggered by | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
 
   # ── Stage 4: Verify Production (main branch) ──────────────────────────────
   verify-production:
@@ -110,13 +119,27 @@ jobs:
         run: sleep 60
 
       - name: Health check with retry
+        id: healthcheck
         run: |
-          for i in 1 2 3; do
-            curl --fail https://agent-platform-production-3b73.up.railway.app/health && break
-            echo "Attempt $i failed, retrying in 15s..."
-            sleep 15
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://agent-platform-production-3b73.up.railway.app/health)
+            echo "Attempt $i — HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed"
+              exit 0
+            fi
+            sleep 20
           done
+          echo "::error::Health check failed after 5 attempts"
+          exit 1
 
-      - name: Notify on deployment failure
-        if: failure()
-        run: echo "::error::Production health check failed after 3 attempts. Check Railway deploy logs."
+      - name: Write deployment summary
+        if: always()
+        run: |
+          echo "## Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ${{ steps.healthcheck.outcome == 'success' && '✅ Live' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | https://agent-platform-production-3b73.up.railway.app |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployed by | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
