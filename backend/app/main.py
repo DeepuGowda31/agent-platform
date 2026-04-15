@@ -2,14 +2,11 @@ import time
 import uuid
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
 from prometheus_fastapi_instrumentator import Instrumentator
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from app.api.routes import router as agent_router
 from app.core.logger import logger
 from app.observability.metrics import (
-    METRICS, requests_total, request_latency,
-    agent_calls_total, llm_errors_total
+    METRICS
 )
 
 app = FastAPI(title="Agent Platform", version="1.0.0")

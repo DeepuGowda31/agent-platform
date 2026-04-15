@@ -1,7 +1,7 @@
 from app.graph.state import AgentState
 from app.llm.gemini_client import ask_llm
 from app.core.logger import logger
-from app.memory.store import add_message, format_history_for_prompt
+from app.memory.store import add_message
 
 # ── Supervisor Node ─────────────────────────────────────────────────────────
 def supervisor_node(state: AgentState) -> AgentState:
