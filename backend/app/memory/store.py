@@ -5,7 +5,7 @@ import time
 # session_id -> list of {role, content, ts}
 _store: Dict[str, List[dict]] = defaultdict(list)
 
-MAX_TURNS = 20  # keep last 20 messages per session
+MAX_TURNS = 20
 
 def add_message(session_id: str, role: str, content: str):
     _store[session_id].append({

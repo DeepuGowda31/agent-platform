@@ -48,8 +48,8 @@ def health():
     missing = [k for k in ("GROQ_API_KEY", "PINECONE_API_KEY", "TAVILY_API_KEY")
                if not getattr(settings, k)]
     if missing:
-        return JSONResponse(status_code=503, content={"status": "degraded", "missing": missing})
-    return {"status": "ok"}
+        return JSONResponse(status_code=503, content={"status": "degraded", "missing_keys": missing})
+    return {"status": "ok", "version": "1.0.0", "environment": "production"}
 
 # ── Metrics ───────────────────────────────────────────────────────────────────
 @app.get("/metrics")
