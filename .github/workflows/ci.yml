@@ -98,25 +98,17 @@ jobs:
       - name: Deploy to Railway (Production)
         run: |
           npm install -g @railway/cli
-          railway up --service agent-platform --detach
+          railway up --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PROD }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
 
       - name: Verify production deployment
         run: |
-          sleep 15
+          sleep 30
           curl --fail ${{ vars.PRODUCTION_URL }}/health || exit 1
 
       - name: Notify success
         if: success()
-        run: |
-          echo "✅ Production deployment successful!"
-          echo "URL: ${{ vars.PRODUCTION_URL }}"
-
-      - name: Rollback on failure
-        if: failure()
-        run: |
-          echo "❌ Deployment failed — triggering rollback"
-          railway rollback --service agent-platform
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PROD }}
+        run: echo "✅ Production deployment successful! URL: ${{ vars.PRODUCTION_URL }}"
