@@ -9,7 +9,5 @@ pinecone
 tavily-python
 httpx
 aiosqlite
-prometheus-fastapi-instrumentator
-prometheus-client
 pytest
 pytest-asyncio
