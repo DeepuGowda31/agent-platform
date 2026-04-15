@@ -9,37 +9,27 @@ from app.graph.nodes import (
     route_to_agent,
 )
 
-def build_graph():
-    graph = StateGraph(AgentState)
+_agent_graph = None
 
-    # ── Register all nodes ──────────────────────────────────────────────────
-    graph.add_node("supervisor", supervisor_node)
-    graph.add_node("research",   research_node)
-    graph.add_node("data",       data_node)
-    graph.add_node("general",    general_node)
-    graph.add_node("memory",     memory_node)
 
-    # ── Entry point ─────────────────────────────────────────────────────────
-    graph.set_entry_point("supervisor")
-
-    # ── Conditional routing from supervisor ─────────────────────────────────
-    graph.add_conditional_edges(
-        "supervisor",
-        route_to_agent,
-        {
-            "research": "research",
-            "data":     "data",
-            "general":  "general",
-        }
-    )
-
-    # ── All agents flow into memory, then END ────────────────────────────────
-    graph.add_edge("research", "memory")
-    graph.add_edge("data",     "memory")
-    graph.add_edge("general",  "memory")
-    graph.add_edge("memory",   END)
-
-    return graph.compile()
-
-# Singleton — compiled once at startup
-agent_graph = build_graph()
+def get_graph():
+    global _agent_graph
+    if _agent_graph is None:
+        graph = StateGraph(AgentState)
+        graph.add_node("supervisor", supervisor_node)
+        graph.add_node("research", research_node)
+        graph.add_node("data", data_node)
+        graph.add_node("general", general_node)
+        graph.add_node("memory", memory_node)
+        graph.set_entry_point("supervisor")
+        graph.add_conditional_edges(
+            "supervisor",
+            route_to_agent,
+            {"research": "research", "data": "data", "general": "general"},
+        )
+        graph.add_edge("research", "memory")
+        graph.add_edge("data", "memory")
+        graph.add_edge("general", "memory")
+        graph.add_edge("memory", END)
+        _agent_graph = graph.compile()
+    return _agent_graph

@@ -7,9 +7,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN adduser --disabled-password --gecos "" appuser
-USER appuser
+RUN mkdir -p data
 
-EXPOSE ${PORT:-8000}
+RUN adduser --disabled-password --gecos "" appuser && \
+    chown -R appuser:appuser /app
+USER appuser
 
 CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

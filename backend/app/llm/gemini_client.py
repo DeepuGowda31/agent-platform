@@ -1,17 +1,24 @@
-from groq import Groq
 from app.core.config import settings
 from app.core.logger import logger
 from app.observability.metrics import METRICS
 
-_client = Groq(api_key=settings.GROQ_API_KEY)
+_client = None
+
+
+def _get_client():
+    global _client
+    if _client is None:
+        from groq import Groq
+        _client = Groq(api_key=settings.GROQ_API_KEY)
+    return _client
+
 
 def ask_llm(prompt: str, retries: int = 3) -> str:
-
     logger.info({"event": "LLM_CALL_START"})
 
     for attempt in range(retries):
         try:
-            res = _client.chat.completions.create(
+            res = _get_client().chat.completions.create(
                 model=settings.MODEL_NAME,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.2,
