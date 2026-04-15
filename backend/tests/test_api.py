@@ -93,7 +93,17 @@ async def test_agent_query_llm_failure_returns_500():
     assert r.status_code == 500
 
 
-# ── Session History ───────────────────────────────────────────────────────────
+# ── Caching ───────────────────────────────────────────────────────────────────
+@pytest.mark.asyncio
+async def test_cache_returns_cached_true_on_second_call():
+    mock_response = {"answer": "cached answer", "route": "general", "cached": False}
+    with patch("app.services.agent_service.run_agent", new=AsyncMock(return_value=mock_response)) as mock_run:
+        await client_post("/agent/query", {"query": "cache test query", "session_id": "cache-session"})
+        r = await client_post("/agent/query", {"query": "cache test query", "session_id": "cache-session"})
+        assert mock_run.call_count == 1  # LLM only called once
+    assert r.json()["cached"] is True
+
+
 @pytest.mark.asyncio
 async def test_get_history_empty_session():
     r = await client_get("/agent/history/nonexistent-session")
