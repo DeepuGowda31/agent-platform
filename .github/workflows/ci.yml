@@ -111,4 +111,4 @@ jobs:
 
       - name: Notify success
         if: success()
-        run: echo "✅ Production deployment successful! URL: ${{ vars.PRODUCTION_URL }}"
+        run: echo "Production deployment successful!"
